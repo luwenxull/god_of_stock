@@ -1,0 +1,36 @@
+.table {
+  white-space: pre;
+  font-size: 12px;
+  tr:nth-child(even) {
+    th,
+    td {
+      &::after {
+        background-color: #f9f9f9;
+      }
+    }
+  }
+  th,
+  td {
+    background-color: #fff;
+    position: relative;
+    z-index: 1;
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      z-index: -1;
+    }
+    &.fixed-left {
+      position: sticky;
+      z-index: 2;
+    }
+    &:nth-last-child(1 of .fixed-left) {
+      &::after {
+        border-right: 1px solid #e0e0e066;
+      }
+    }
+  }
+}
