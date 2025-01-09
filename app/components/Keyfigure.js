@@ -252,11 +252,12 @@ export default function Keyfigure(props) {
           __reverse: true,
           __score: 0.5,
         },
-        // {
-        //   title: '三年复合增速',
-        //   dataIndex: 'INVENTORY_CARG',
-        //   __percent: true,
-        // },
+        {
+          title: '商誉占比',
+          dataIndex: 'GOODWILL',
+          __percent: true,
+          __reverse: true,
+        },
         {
           title: "应收账款占比",
           dataIndex: "NOTE_ACCOUNTS_RECE_ASSETS",

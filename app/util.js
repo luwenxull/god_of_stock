@@ -1,7 +1,7 @@
 // import balance_key from '../data/balance/key.js';
-import ENTS_SHENWAN from '../data/ents.shenwan.json';
+import ENTS_SHENWAN from "../data/ents.shenwan.json";
 
-const ents = ENTS_SHENWAN.filter(e => !/^(20|900)/.test(e.SECCODE));
+const ents = ENTS_SHENWAN.filter((e) => !/^(20|900)/.test(e.SECCODE));
 
 export const ENT_DIC = {}; // 公司
 export const IND_DIC = {}; // 行业
@@ -15,9 +15,9 @@ for (const ent of ents) {
   IND_DIC[ent.F011V].push(ent);
 }
 
-export const ENT_OPTIONS = ents.map(item => {
+export const ENT_OPTIONS = ents.map((item) => {
   return {
-    label: item.SECCODE + ' - ' + item.SECNAME,
+    label: item.SECCODE + " - " + item.SECNAME,
     value: item.SECCODE,
   };
 });
@@ -26,12 +26,12 @@ export const REPORT_DATE_REG = /^\d{4}-\d{2}-\d{2}$/;
 
 export const REPORT_TYPES = [
   {
-    label: '年报',
-    value: 'annual',
+    label: "年报",
+    value: "annual",
   },
   {
-    label: '累积季报',
-    value: 'quarter_cumulative',
+    label: "累积季报",
+    value: "quarter_cumulative",
   },
   // {
   //   label: '单季报',
@@ -49,7 +49,7 @@ export function splitArrayIntoChunks(array, chunkSize) {
 }
 
 export function formatDate(y, m, d) {
-  return `${y}-${m < 10 ? '0' + m : m}-${d < 10 ? '0' + d : d}`;
+  return `${y}-${m < 10 ? "0" + m : m}-${d < 10 ? "0" + d : d}`;
 }
 
 export function getDates(count, start) {
@@ -59,7 +59,7 @@ export function getDates(count, start) {
     year = now.getFullYear();
     month = now.getMonth() + 1;
   } else {
-    [year, month] = start.split('-').map(v => parseInt(v));
+    [year, month] = start.split("-").map((v) => parseInt(v));
   }
   let startMonth = Math.floor((month - 1) / 3) * 3,
     startYear = year;
@@ -86,12 +86,12 @@ export function getDates(count, start) {
 }
 
 export function getEntsOfSameInd(ent) {
-  return IND_DIC[ENT_DIC[ent].F011V].map(s => s.SECCODE);
+  return IND_DIC[ENT_DIC[ent].F011V].map((s) => s.SECCODE);
 }
 
 export function fetchEntReport(ent, compare) {
-  const code = compare ? IND_DIC[ENT_DIC[ent].F011V].map(s => s.SECCODE).toString() : ent;
-  return fetch(`/api/ent/report?code=${code}`).then(res => res.json());
+  const code = compare ? IND_DIC[ENT_DIC[ent].F011V].map((s) => s.SECCODE).toString() : ent;
+  return fetch(`/api/ent/report?code=${code}`).then((res) => res.json());
 }
 
 export function getLastFiveYear() {
@@ -102,14 +102,14 @@ export function getLastFiveYear() {
 
 /** 生成报告日期 */
 export function getReportDates(type) {
-  if (type === 'annual') {
+  if (type === "annual") {
     return getLastFiveYear()
       .slice(1)
-      .map(year => ({ value: `${year}-12-31`, label: `${year}年` }));
+      .map((year) => ({ value: `${year}-12-31`, label: `${year}年` }));
   } else {
     return Object.entries(
       getDates(20).reduce((map, str) => {
-        const [y, m] = str.split('-');
+        const [y, m] = str.split("-");
         if (!map[y]) {
           map[y] = [];
         }
@@ -130,9 +130,9 @@ export function getReportDates(type) {
 
 export function formatNumber(num) {
   if (num >= 1e8 || num <= -1e8) {
-    return (num / 1e8).toFixed(2) + '亿';
+    return (num / 1e8).toFixed(2) + "亿";
   } else if (num >= 1e4 || num <= -1e4) {
-    return (num / 1e4).toFixed(2) + '万';
+    return (num / 1e4).toFixed(2) + "万";
   } else {
     return num.toFixed(2);
   }
@@ -147,32 +147,32 @@ export function groupsColumns(groups, columns) {
   for (const column of columns) {
     if (groups[column.dataIndex]) {
       delete column.sorter;
-      column.children = groups[column.dataIndex].children.map(key => keyed[key]);
+      column.children = groups[column.dataIndex].children.map((key) => keyed[key]);
       for (const key of groups[column.dataIndex].children) {
         childrened[key] = true;
       }
     }
   }
-  return columns.filter(c => !childrened[c.dataIndex]);
+  return columns.filter((c) => !childrened[c.dataIndex]);
 }
 
 export function calculateCAGR(beginningValue, endingValue, years) {
-  const r = (endingValue - beginningValue) / Math.abs(beginningValue) 
-  return ((Math.abs(r)+1) ** (1 / years) - 1) * (r > 0 ? 1 : -1);
+  const r = (endingValue - beginningValue) / Math.abs(beginningValue);
+  return ((Math.abs(r) + 1) ** (1 / years) - 1) * (r > 0 ? 1 : -1);
 }
 
 export function getRelativeDate(date, dy = 0, dm = 0, dd = 0) {
-  const [y, m, d] = date.split('-').map(Number);
+  const [y, m, d] = date.split("-").map(Number);
   return formatDate(y + dy, m + dm, d + dd);
 }
 
-export function percent(value) {
-  return typeof value === 'number' ? (value * 100).toFixed(2) + '%' : null;
+export function percent(value, dc = 2) {
+  return typeof value === "number" ? (value * 100).toFixed(dc) + "%" : null;
 }
 
 export function getPrevQuarter(date) {
   let prevDate = getRelativeDate(date, 0, -3);
-  let [y, m, d] = prevDate.split('-').map(Number);
+  let [y, m, d] = prevDate.split("-").map(Number);
   if (m === 0) {
     y -= 1;
     m = 12;
@@ -186,7 +186,7 @@ export function getPrevQuarter(date) {
 }
 
 export function getFirstQuarter(date) {
-  const [y] = date.split('-').map(Number);
+  const [y] = date.split("-").map(Number);
   return formatDate(y, 3, 31);
 }
 
@@ -197,19 +197,23 @@ export function getFirstQuarter(date) {
  * @param {*} date
  */
 export function addYOY(data, test = () => true) {
-  Object.keys(data).filter(key => REPORT_DATE_REG.test(key)).forEach(date => {
-    const prev = data[getRelativeDate(date, -1)];
-    if (prev) {
-      const curr = data[date];
-      Object.keys(curr).filter(test).forEach(key => {
-        const prevValue = prev[key],
-          curValue = curr[key];
-        if (typeof prevValue === 'number' && typeof curValue === 'number') {
-          curr[key + '_YOY'] = calculateCAGR(prevValue, curValue, 1);
-        }
-      });
-    }
-  });
+  Object.keys(data)
+    .filter((key) => REPORT_DATE_REG.test(key))
+    .forEach((date) => {
+      const prev = data[getRelativeDate(date, -1)];
+      if (prev) {
+        const curr = data[date];
+        Object.keys(curr)
+          .filter(test)
+          .forEach((key) => {
+            const prevValue = prev[key],
+              curValue = curr[key];
+            if (typeof prevValue === "number" && typeof curValue === "number") {
+              curr[key + "_YOY"] = calculateCAGR(prevValue, curValue, 1);
+            }
+          });
+      }
+    });
   // Object.keys(data).forEach(date => {
   //   const prev = data[getPrevQuarter(date)];
   //   if (prev) {

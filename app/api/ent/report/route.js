@@ -217,11 +217,12 @@ function buildKeyfigure(records) {
             _gb("TRADE_FINASSET_NOTFVTPL") +
             _gb("NONCURRENT_ASSET_1YEAR") -
             (_gb("SHORT_LOAN") + _gb("BORROW_FUND") + _gb("TRADE_FINLIAB_NOTFVTPL") + _gb("NONCURRENT_LIAB_1YEAR")),
-          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / _gb("TOTAL_ASSETS"),
-          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / _gb("TOTAL_ASSETS"),
+          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / _gb("TOTAL_EQUITY"),
+          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / _gb("TOTAL_EQUITY"),
           NETPROFIT_HEAVY_ASSETS: _gp("NETPROFIT") / HEAVY_ASSETS,
           FINANCING_RATE: checkNumber(_gp("FE_INTEREST_EXPENSE") / INTEREST_DEBT_AVG, 0),
-          LPE: _gb("LONG_PREPAID_EXPENSE") / _gb("TOTAL_ASSETS"),
+          LPE: _gb("LONG_PREPAID_EXPENSE") / _gb("TOTAL_EQUITY"),
+          GOODWILL: _gb("GOODWILL") / _gb("TOTAL_EQUITY"),
         });
         return keyfigure;
       },
