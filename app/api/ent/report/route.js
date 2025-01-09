@@ -170,7 +170,7 @@ function buildKeyfigure(records) {
           // CASH_COREPROFIT: _getA(data.cash, 'NETCASH_OPERATE') / CORE_PROFIT, // 现金净利润占比
           RECEIVABLE_TURNOVER: checkNumber(_gp("OPERATE_INCOME") / _gb("NOTE_ACCOUNTS_RECE")),
           ASSET_TURNOVER: _gp("OPERATE_INCOME") / _gb("TOTAL_ASSETS"),
-          INVENTORY_TURNOVER: _gp("OPERATE_COST") / _gb("INVENTORY"),
+          INVENTORY_TURNOVER: checkNumber(_gp("OPERATE_COST") / _gb("INVENTORY"), 0),
           // 存货占比
           INVENTORY_ASSETS: _gb("INVENTORY") / _gb("TOTAL_ASSETS"),
           // 存货三年增速
@@ -220,7 +220,7 @@ function buildKeyfigure(records) {
           DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / _gb("TOTAL_EQUITY"),
           BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / _gb("TOTAL_EQUITY"),
           NETPROFIT_HEAVY_ASSETS: _gp("NETPROFIT") / HEAVY_ASSETS,
-          FINANCING_RATE: checkNumber(_gp("FE_INTEREST_EXPENSE") / INTEREST_DEBT_AVG, 0),
+          // FINANCING_RATE: INTEREST_DEBT_AVG === 0 ? 0 : _gp("FE_INTEREST_EXPENSE") / INTEREST_DEBT_AVG,
           LPE: _gb("LONG_PREPAID_EXPENSE") / _gb("TOTAL_EQUITY"),
           GOODWILL: _gb("GOODWILL") / _gb("TOTAL_EQUITY"),
         });
@@ -262,17 +262,13 @@ export async function GET(request) {
   const code = request.nextUrl.searchParams.get("code");
   const data = code.split(",").map((code) => {
     try {
-      return {
-        ...JSON.parse(fs.readFileSync(`${process.cwd()}/data/ent_v2/${code}.json`, "utf8")),
-        code,
-      };
+      return JSON.parse(fs.readFileSync(`${process.cwd()}/data/ent_v2/${code}.json`, "utf8"));
     } catch (e) {
-      console.error(e.message);
+      // console.error(e.message);
       return {
         profit: {},
         balance: {},
         cash: {},
-        code,
       };
     }
   });

@@ -1,26 +1,44 @@
-// import balance_key from '../data/balance/key.js';
-import ENTS_SHENWAN from "../data/ents.shenwan.json";
+export function handleEntData(ents, type) {
+  const entDic = {}; // 公司
+  const indDic = {}; // 行业
 
-const ents = ENTS_SHENWAN.filter((e) => !/^(20|900)/.test(e.SECCODE));
+  const indKey = type === "SHENWAN" ? "F011V" : "F012V";
 
-export const ENT_DIC = {}; // 公司
-export const IND_DIC = {}; // 行业
-
-/** 填充数据 */
-for (const ent of ents) {
-  ENT_DIC[ent.SECCODE] = ent;
-  if (!IND_DIC[ent.F011V]) {
-    IND_DIC[ent.F011V] = [];
+  /** 填充数据 */
+  for (const ent of ents) {
+    entDic[ent.SECCODE] = ent;
+    if (!indDic[ent[indKey]]) {
+      indDic[ent[indKey]] = [];
+    }
+    indDic[ent[indKey]].push(ent);
   }
-  IND_DIC[ent.F011V].push(ent);
+
+  const options = ents.map((item) => {
+    return {
+      label: item.SECCODE + " - " + item.SECNAME,
+      value: item.SECCODE,
+    };
+  });
+
+  return {
+    all: ents,
+    indKey,
+    entDic,
+    indDic,
+    options,
+  };
 }
 
-export const ENT_OPTIONS = ents.map((item) => {
-  return {
-    label: item.SECCODE + " - " + item.SECNAME,
-    value: item.SECCODE,
-  };
-});
+export const IND_TYPES = [
+  {
+    label: "申万",
+    value: "SHENWAN",
+  },
+  {
+    label: "巨潮",
+    value: "JUCHAO",
+  },
+];
 
 export const REPORT_DATE_REG = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -85,13 +103,9 @@ export function getDates(count, start) {
     .map(([y, m, d]) => formatDate(y, m, d));
 }
 
-export function getEntsOfSameInd(ent) {
-  return IND_DIC[ENT_DIC[ent].F011V].map((s) => s.SECCODE);
-}
-
-export function fetchEntReport(ent, compare) {
-  const code = compare ? IND_DIC[ENT_DIC[ent].F011V].map((s) => s.SECCODE).toString() : ent;
-  return fetch(`/api/ent/report?code=${code}`).then((res) => res.json());
+export function getEntsOfSameInd(ent, entsInfo) {
+  const { entDic, indDic, indKey } = entsInfo;
+  return indDic[entDic[ent][indKey]];
 }
 
 export function getLastFiveYear() {

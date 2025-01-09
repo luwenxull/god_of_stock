@@ -53,7 +53,7 @@ export default function ({ data, field, title, percent: __percent }) {
               callback: (v) => (__percent ? percent(v) : formatNumber(v)),
             },
             grid: {
-              // display: false,
+              display: false,
             },
           },
           y2: {
@@ -62,7 +62,7 @@ export default function ({ data, field, title, percent: __percent }) {
               callback: (v) => percent(v),
             },
             grid: {
-              display: false,
+              // display: false,
             },
           },
         },

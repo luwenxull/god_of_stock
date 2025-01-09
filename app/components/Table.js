@@ -178,7 +178,7 @@ function Table(props) {
       </div>
       {totalPage > 1 ? (
         <div className={`p-2 flex justify-end ${styles.page}`}>
-          <Pagination page={page} total={totalPage} onChange={setPage} showControls />
+          <Pagination page={page} total={totalPage} onChange={setPage} showControls size="sm" />
         </div>
       ) : null}
     </div>

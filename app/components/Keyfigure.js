@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useImperativeHandle } from "react";
 import {
   Button,
   Link,
@@ -12,21 +12,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@nextui-org/react";
-import {
-  addYOY,
-  buildIndex,
-  ENT_DIC,
-  formatNumber,
-  get,
-  getDates,
-  getMarket,
-  percent,
-  REPORT_DATE_REG,
-} from "../util.js";
+import { addYOY, buildIndex, formatNumber, get, getDates, getMarket, percent, REPORT_DATE_REG } from "../util.js";
 import Indicator from "./Indicator.js";
 import Table from "./Table.js";
 
 export default function Keyfigure(props) {
+  useImperativeHandle(props.ref, () => ({
+    refresh: fetchData,
+  }));
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [chartConfig, setChartConfig] = useState({
+    data: null,
+    field: null,
+  });
+  const [source, setSource] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const rawColumns = [
     {
       title: "公司",
@@ -34,22 +36,20 @@ export default function Keyfigure(props) {
       children: [
         {
           title: "代码",
-          dataIndex: "CODE",
-          __stat: false,
-          __render: (_, data) => {
-            const market = getMarket(data.CODE);
+          render: (_, data) => {
+            const market = getMarket(data.SECCODE);
             return (
               <Popover placement="right">
                 <PopoverTrigger>
                   <Button color="primary" size="sm" variant="bordered">
-                    {data.CODE}
+                    {data.SECCODE}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent>
                   <div className="p-2 flex gap-2">
                     <Link
                       href={`https://basic.10jqka.com.cn/astockph/briefinfo/index.html?showhead=0&code=${
-                        data.CODE
+                        data.SECCODE
                       }&marketid=${market === "SH" ? "17" : "33"}`}
                       target="_blank"
                       size="sm"
@@ -58,7 +58,7 @@ export default function Keyfigure(props) {
                     </Link>
                     <Link
                       href={`https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=${
-                        market + data.CODE
+                        market + data.SECCODE
                       }&color=b#/cwfx`}
                       target="_blank"
                       size="sm"
@@ -74,11 +74,7 @@ export default function Keyfigure(props) {
         },
         {
           title: "名称",
-          dataIndex: "SECURITY_NAME_ABBR",
-          __stat: false,
-          __render: (_, data) => {
-            return ENT_DIC[data.CODE]?.SECNAME;
-          },
+          render: (_, data) => data.SECNAME,
           fixed: "left",
         },
         {
@@ -106,13 +102,13 @@ export default function Keyfigure(props) {
           title: "三年复合增速",
           dataIndex: "OPERATE_INCOME_CARG",
           __percent: true,
-          __score: 1,
+          __score: 2,
         },
         {
           title: "与成本差",
           dataIndex: "OPERATE_INCOME_CARG_DIFF_COST",
           __percent: true,
-          __score: 0.5,
+          __score: 1,
         },
         {
           title: "营业成本",
@@ -138,7 +134,7 @@ export default function Keyfigure(props) {
         {
           title: "核心利润",
           dataIndex: "CORE_PROFIT",
-          __score: 0.5,
+          __score: 1,
         },
         {
           title: "同比",
@@ -149,7 +145,7 @@ export default function Keyfigure(props) {
         {
           title: "净利润",
           dataIndex: "NETPROFIT",
-          __score: 0.5,
+          __score: 1,
         },
         {
           title: "同比",
@@ -161,7 +157,7 @@ export default function Keyfigure(props) {
           title: "三年复合增速",
           dataIndex: "NETPROFIT_CARG",
           __percent: true,
-          __score: 1,
+          __score: 2,
         },
       ],
     },
@@ -236,27 +232,26 @@ export default function Keyfigure(props) {
           dataIndex: "LIAB_ASSETS",
           __percent: true,
           __reverse: true,
-          __score: 1,
+          __score: 0.5,
         },
         {
           title: "有息负债率",
           dataIndex: "INTEREST_DEBT_RATIO",
           __percent: true,
           __reverse: true,
-          __score: 1.5,
         },
         {
           title: "存货占比",
           dataIndex: "INVENTORY_ASSETS",
           __percent: true,
           __reverse: true,
-          __score: 0.5,
         },
         {
-          title: '商誉占比',
-          dataIndex: 'GOODWILL',
+          title: "商誉占比",
+          dataIndex: "GOODWILL",
           __percent: true,
           __reverse: true,
+          __score: 0.5,
         },
         {
           title: "应收账款占比",
@@ -312,13 +307,13 @@ export default function Keyfigure(props) {
           title: "总资产周转率",
           dataIndex: "ASSET_TURNOVER",
         },
-        {
-          title: "融资利率",
-          dataIndex: "FINANCING_RATE",
-          __percent: true,
-          __reverse: true,
-          __score: 0.5,
-        },
+        // {
+        //   title: "融资利率",
+        //   dataIndex: "FINANCING_RATE",
+        //   __percent: true,
+        //   __reverse: true,
+        //   __score: 0.5,
+        // },
       ],
     },
     {
@@ -359,7 +354,7 @@ export default function Keyfigure(props) {
           // indexes: {},
         });
         // 统计所有数值
-        for (const data of props.data) {
+        for (const data of source) {
           // 排除没有数据的公司
           if (data[date]) {
             const value = data[date][key];
@@ -381,7 +376,7 @@ export default function Keyfigure(props) {
     }
 
     const stats = {};
-    for (const data of props.data) {
+    for (const data of source) {
       for (const [k, d] of Object.entries(data)) {
         // 本期得分初始化
         if (REPORT_DATE_REG.test(k)) {
@@ -400,7 +395,7 @@ export default function Keyfigure(props) {
       for (const column of rawColumns) {
         score(column, date, stats[date]);
       }
-      for (const data of props.data) {
+      for (const data of source) {
         if (data[date]) {
           // 本期得分初始化
           data[date].SCORE = Object.values(data[date].SCORES).reduce((acc, curr) => acc + curr(), 0);
@@ -411,84 +406,74 @@ export default function Keyfigure(props) {
     }
 
     // 计算同比
-    props.data.forEach((data) => addYOY(data, (key) => key === "SCORE"));
+    source.forEach((data) => addYOY(data, (key) => key === "SCORE"));
 
     return stats;
-  }, [props.data]);
+  }, [source]);
 
   const columns = useMemo(() => {
     function handleColumn(column) {
       const { dataIndex: key, __percent, __stat = true, title, children = [] } = column;
       const _stats = stats[props.date];
       if (key) {
-        column.render =
-          column.__render ||
-          function (_, data) {
-            let value = data[props.date]?.[key];
-            const colored = /(YOY|CARG)$/.test(key);
-            if (value !== undefined) {
-              let result = value;
-              if (__percent) {
-                result = percent(value); // 百分比
-              } else if (typeof value === "number") {
-                result = formatNumber(value);
-              }
-              if (typeof value === "number") {
-                result = (
-                  <Button
-                    size="sm"
-                    color={colored ? (value > 0 ? "danger" : "success") : "default"}
-                    variant={colored ? "flat" : "light"}
-                    onPress={() => {
-                      if (key.endsWith("YOY")) return;
-                      setIsModalOpen(true);
-                      setChartConfig({
-                        data,
-                        field: key,
-                        title,
-                        percent: __percent,
-                      });
+        column.render = function (_, data) {
+          let value = data[props.date]?.[key];
+          const colored = /(YOY|CARG)$/.test(key);
+          if (value !== undefined) {
+            let result = value;
+            if (__percent) {
+              result = percent(value); // 百分比
+            } else if (typeof value === "number") {
+              result = formatNumber(value);
+            }
+            if (typeof value === "number") {
+              result = (
+                <Button
+                  size="sm"
+                  color={colored ? (value > 0 ? "danger" : "success") : "default"}
+                  variant={colored ? "flat" : "light"}
+                  onPress={() => {
+                    if (key.endsWith("YOY")) return;
+                    setIsModalOpen(true);
+                    setChartConfig({
+                      data,
+                      field: key,
+                      title,
+                      percent: __percent,
+                    });
+                  }}
+                >
+                  {result}
+                </Button>
+              );
+            }
+            if (__stat) {
+              let i = _stats[key].indexes[value];
+              result = (
+                <>
+                  {result}
+                  <span
+                    style={{
+                      marginLeft: "4px",
+                      verticalAlign: "super",
+                      fontSize: "12px",
+                      color: i < _stats[key].values.length / 2 ? "red" : "green",
                     }}
                   >
-                    {result}
-                  </Button>
-                );
-              }
-              if (__stat) {
-                let i = _stats[key].indexes[value];
-                result = (
-                  <>
-                    {result}
-                    <span
-                      // count={stats[dataIndex]?.values.indexOf(value) + 1}
-                      // size="small"
-                      // color="#0006"
-                      style={{
-                        marginLeft: "4px",
-                        verticalAlign: "super",
-                        fontSize: "12px",
-                        // color: '#',
-                        // opacity: 0.5,
-                        // transform: 'scale(0.6)',
-                        color: i < _stats[key].values.length / 2 ? "red" : "green",
-                      }}
-                    >
-                      {i + 1}
-                      {/* {i < stats[dataIndex].values.length / 2 ? '↑' : '↓'} */}
-                    </span>
-                  </>
-                );
-              }
-              return result;
+                    {i + 1}
+                  </span>
+                </>
+              );
             }
-          };
-        column.__summary = () => {
-          const value = _stats[key] ? _stats[key].values[Math.floor(_stats[key].values.length / 2)] : null;
-          return typeof value === "number" ? (__percent ? percent(value) : formatNumber(value)) : null;
+            return result;
+          }
         };
+        // column.__summary = () => {
+        //   const value = _stats[key] ? _stats[key].values[Math.floor(_stats[key].values.length / 2)] : null;
+        //   return typeof value === "number" ? (__percent ? percent(value) : formatNumber(value)) : null;
+        // };
         column.sorter = (a, b) => get(a, [props.date, key], 0) - get(b, [props.date, key], 0);
       }
-
       for (const child of children) {
         handleColumn(child);
       }
@@ -499,14 +484,27 @@ export default function Keyfigure(props) {
     return rawColumns;
   }, [stats, props.date]);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chartConfig, setChartConfig] = useState({
-    data: null,
-    field: null,
-  });
+  function fetchData() {
+    if (props.ents.length === 0) {
+      // setSource([]);
+      return;
+    }
+    setLoading(true);
+    fetch(`/api/ent/report?code=${props.ents.map((ent) => ent.SECCODE).toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setSource(data.map((data, i) => Object.assign(addYOY(data), props.ents[i])));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
+
+  useEffect(fetchData, [props.ents]);
+
   return (
     <>
-      <Table data={props.data} columns={columns} loading={props.loading} rowKey="CODE" />
+      <Table data={source} columns={columns} loading={loading} rowKey="SECCODE" />
       <Modal isOpen={isModalOpen} onOpenChange={setIsModalOpen} size="5xl">
         <ModalContent>
           {() => (
