@@ -30,9 +30,15 @@ function removeNaN(obj) {
   return obj;
 }
 
-function checkNaN(val, dft) {
+function checkNumber(val, dft = 0) {
   if (Number.isNaN(val)) {
     return dft;
+  }
+  if (val === Infinity) {
+    return 9999;
+  }
+  if (val === -Infinity) {
+    return -9999;
   }
   return val;
 }
@@ -162,7 +168,7 @@ function buildKeyfigure(records) {
           CASH_INCOME: _gc("SALES_SERVICES") / _gp("OPERATE_INCOME"), // 现金收入占比
           // 净现比
           // CASH_COREPROFIT: _getA(data.cash, 'NETCASH_OPERATE') / CORE_PROFIT, // 现金净利润占比
-          RECEIVABLE_TURNOVER: _gp("OPERATE_INCOME") / _gb("NOTE_ACCOUNTS_RECE"),
+          RECEIVABLE_TURNOVER: checkNumber(_gp("OPERATE_INCOME") / _gb("NOTE_ACCOUNTS_RECE")),
           ASSET_TURNOVER: _gp("OPERATE_INCOME") / _gb("TOTAL_ASSETS"),
           INVENTORY_TURNOVER: _gp("OPERATE_COST") / _gb("INVENTORY"),
           // 存货占比
@@ -211,10 +217,10 @@ function buildKeyfigure(records) {
             _gb("TRADE_FINASSET_NOTFVTPL") +
             _gb("NONCURRENT_ASSET_1YEAR") -
             (_gb("SHORT_LOAN") + _gb("BORROW_FUND") + _gb("TRADE_FINLIAB_NOTFVTPL") + _gb("NONCURRENT_LIAB_1YEAR")),
-          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / HEAVY_ASSETS,
-          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / _gb("NOTE_ACCOUNTS_RECE"),
+          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / _gb("TOTAL_ASSETS"),
+          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / _gb("TOTAL_ASSETS"),
           NETPROFIT_HEAVY_ASSETS: _gp("NETPROFIT") / HEAVY_ASSETS,
-          FINANCING_RATE: checkNaN(_gp("FE_INTEREST_EXPENSE") / INTEREST_DEBT_AVG, 0),
+          FINANCING_RATE: checkNumber(_gp("FE_INTEREST_EXPENSE") / INTEREST_DEBT_AVG, 0),
           LPE: _gb("LONG_PREPAID_EXPENSE") / _gb("TOTAL_ASSETS"),
         });
         return keyfigure;

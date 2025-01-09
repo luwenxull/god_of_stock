@@ -14,6 +14,14 @@
       }
     }
   }
+  tr:hover {
+    th,
+    td {
+      &::after {
+        background-color: #eee;
+      }
+    }
+  }
   th,
   td {
     background-color: #fff;
