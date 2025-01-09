@@ -1,7 +1,12 @@
-import fs from 'fs';
+import fs from "fs";
 
 export async function GET() {
-  return Response.json(
-    JSON.parse(fs.readFileSync(`${process.cwd()}/data/industry.v2.json`, 'utf8'))
-  );
+  return new Promise((resolve, reject) => {
+    fs.readFile(`${process.cwd()}/data/ents.shenwan.json`, "utf8", (err, data) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(Response.json(JSON.parse(data).filter((e) => !/^(20|900)/.test(e.SECCODE))));
+    });
+  });
 }

@@ -13,10 +13,3 @@ body {
   /* background: var(--background); */
   font-family: serif;
 }
-
-.fixed-table {
-  width: 100%;
-}
-.fixed-table th {
-  width: 100px;
-}

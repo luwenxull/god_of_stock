@@ -3,16 +3,24 @@
 import { useMemo, useState } from "react";
 import {
   Button,
+  Link,
   Modal,
   ModalBody,
   ModalContent,
   ModalHeader,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@nextui-org/react";
 import {
-  formatNumber,
-  percent,
-  getDates,
+  addYOY,
   buildIndex,
+  ENT_DIC,
+  formatNumber,
+  get,
+  getDates,
+  getMarket,
+  percent,
   REPORT_DATE_REG,
 } from "../util.js";
 import Indicator from "./Indicator.js";
@@ -26,15 +34,51 @@ export default function Keyfigure(props) {
       children: [
         {
           title: "代码",
-          dataIndex: "SECURITY_CODE",
+          dataIndex: "CODE",
           __stat: false,
-          __render: (_, data) => data.CODE,
+          __render: (_, data) => {
+            const market = getMarket(data.CODE);
+            return (
+              <Popover placement="right">
+                <PopoverTrigger>
+                  <Button color="primary" size="sm" variant="bordered">
+                    {data.CODE}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <div className="p-2 flex gap-2">
+                    <Link
+                      href={`https://basic.10jqka.com.cn/astockph/briefinfo/index.html?showhead=0&code=${
+                        data.CODE
+                      }&marketid=${market === "SH" ? "17" : "33"}`}
+                      target="_blank"
+                      size="sm"
+                    >
+                      同花顺
+                    </Link>
+                    <Link
+                      href={`https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=${
+                        market + data.CODE
+                      }&color=b#/cwfx`}
+                      target="_blank"
+                      size="sm"
+                    >
+                      东方财富
+                    </Link>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            );
+          },
           fixed: "left",
         },
         {
           title: "名称",
           dataIndex: "SECURITY_NAME_ABBR",
           __stat: false,
+          __render: (_, data) => {
+            return ENT_DIC[data.CODE]?.SECNAME;
+          },
           fixed: "left",
         },
         {
@@ -192,12 +236,21 @@ export default function Keyfigure(props) {
           dataIndex: "LIAB_ASSETS",
           __percent: true,
           __reverse: true,
+          __score: 1,
+        },
+        {
+          title: "有息负债率",
+          dataIndex: "INTEREST_DEBT_RATIO",
+          __percent: true,
+          __reverse: true,
+          __score: 1.5,
         },
         {
           title: "存货占比",
           dataIndex: "INVENTORY_ASSETS",
           __percent: true,
           __reverse: true,
+          __score: 0.5,
         },
         // {
         //   title: '三年复合增速',
@@ -210,15 +263,34 @@ export default function Keyfigure(props) {
           __percent: true,
           __reverse: true,
         },
+        {
+          title: "长期待摊费用占比",
+          dataIndex: "LPE",
+          __percent: true,
+          __reverse: true,
+        },
         // {
         //   title: '三年复合增速',
         //   dataIndex: 'NOTE_ACCOUNTS_RECE_CARG',
         //   __percent: true,
         // },
         {
-          title: "减值率",
+          title: "折旧率",
+          dataIndex: "DEPRECIATION",
+          __percent: true,
+          __score: 0.5,
+        },
+        {
+          title: "坏账率",
           dataIndex: "BAD_DEBT",
           __percent: true,
+          __score: 0.5,
+        },
+        {
+          title: "重资产收益率",
+          dataIndex: "NETPROFIT_HEAVY_ASSETS",
+          __percent: true,
+          __score: 0.5,
         },
       ],
     },
@@ -238,7 +310,13 @@ export default function Keyfigure(props) {
         {
           title: "总资产周转率",
           dataIndex: "ASSET_TURNOVER",
-          __score: 1.5,
+        },
+        {
+          title: "融资利率",
+          dataIndex: "FINANCING_RATE",
+          __percent: true,
+          __reverse: true,
+          __score: 0.5,
         },
       ],
     },
@@ -248,13 +326,11 @@ export default function Keyfigure(props) {
         {
           title: "速动比率",
           dataIndex: "QUICK_RATIO",
-          __score: 0.5,
         },
         {
           title: "自由现金",
           dataIndex: "CASH_DIFF",
           // __percent: true,
-          __score: 0.5,
         },
       ],
     },
@@ -273,13 +349,7 @@ export default function Keyfigure(props) {
 
   const stats = useMemo(() => {
     function score(column, date, stats) {
-      const {
-        dataIndex: key,
-        __stat = true,
-        __reverse = false,
-        __score = 1,
-        children = [],
-      } = column;
+      const { dataIndex: key, __stat = true, __reverse = false, __score = 1, children = [] } = column;
       if (__stat && key && key !== "SCORE") {
         const _stats = (stats[key] = {
           // count: 0,
@@ -297,15 +367,12 @@ export default function Keyfigure(props) {
               // _stats.sum += value;
               _stats.values.push(value);
               // 添加本期得分贡献列
-              data[date].SCORES[key] = () =>
-                (_stats.values.length - _stats.indexes[value]) * __score;
+              data[date].SCORES[key] = () => (_stats.values.length - _stats.indexes[value]) * __score;
             }
           }
         }
         // 对数值进行排序
-        _stats.indexes = buildIndex(
-          _stats.values.sort((a, b) => (b - a) * (__reverse ? -1 : 1))
-        );
+        _stats.indexes = buildIndex(_stats.values.sort((a, b) => (b - a) * (__reverse ? -1 : 1)));
       }
       for (const child of children) {
         score(child, date, stats);
@@ -335,30 +402,22 @@ export default function Keyfigure(props) {
       for (const data of props.data) {
         if (data[date]) {
           // 本期得分初始化
-          data[date].SCORE = Object.values(data[date].SCORES).reduce(
-            (acc, curr) => acc + curr(),
-            0
-          );
+          data[date].SCORE = Object.values(data[date].SCORES).reduce((acc, curr) => acc + curr(), 0);
           stats[date].SCORE.values.push(data[date].SCORE);
         }
       }
-      stats[date].SCORE.indexes = buildIndex(
-        stats[date].SCORE.values.sort((a, b) => b - a)
-      );
+      stats[date].SCORE.indexes = buildIndex(stats[date].SCORE.values.sort((a, b) => b - a));
     }
+
+    // 计算同比
+    props.data.forEach((data) => addYOY(data, (key) => key === "SCORE"));
 
     return stats;
   }, [props.data]);
 
   const columns = useMemo(() => {
     function handleColumn(column) {
-      const {
-        dataIndex: key,
-        __percent,
-        __stat = true,
-        title,
-        children = [],
-      } = column;
+      const { dataIndex: key, __percent, __stat = true, title, children = [] } = column;
       const _stats = stats[props.date];
       if (key) {
         column.render =
@@ -377,9 +436,7 @@ export default function Keyfigure(props) {
                 result = (
                   <Button
                     size="sm"
-                    color={
-                      colored ? (value > 0 ? "danger" : "success") : "default"
-                    }
+                    color={colored ? (value > 0 ? "danger" : "success") : "default"}
                     variant={colored ? "flat" : "light"}
                     onPress={() => {
                       if (key.endsWith("YOY")) return;
@@ -388,6 +445,7 @@ export default function Keyfigure(props) {
                         data,
                         field: key,
                         title,
+                        percent: __percent,
                       });
                     }}
                   >
@@ -411,8 +469,7 @@ export default function Keyfigure(props) {
                         // color: '#',
                         // opacity: 0.5,
                         // transform: 'scale(0.6)',
-                        color:
-                          i < _stats[key].values.length / 2 ? "red" : "green",
+                        color: i < _stats[key].values.length / 2 ? "red" : "green",
                       }}
                     >
                       {i + 1}
@@ -425,16 +482,10 @@ export default function Keyfigure(props) {
             }
           };
         column.__summary = () => {
-          const value = _stats[key]
-            ? _stats[key].values[Math.floor(_stats[key].values.length / 2)]
-            : null;
-          return typeof value === "number"
-            ? __percent
-              ? percent(value)
-              : formatNumber(value)
-            : null;
+          const value = _stats[key] ? _stats[key].values[Math.floor(_stats[key].values.length / 2)] : null;
+          return typeof value === "number" ? (__percent ? percent(value) : formatNumber(value)) : null;
         };
-        column.sorter = (a, b) => a[props.date]?.[key] - b[props.date]?.[key];
+        column.sorter = (a, b) => get(a, [props.date, key], 0) - get(b, [props.date, key], 0);
       }
 
       for (const child of children) {
@@ -454,12 +505,7 @@ export default function Keyfigure(props) {
   });
   return (
     <>
-      <Table
-        data={props.data}
-        columns={columns}
-        loading={props.loading}
-        rowKey="CODE"
-      />
+      <Table data={props.data} columns={columns} loading={props.loading} rowKey="CODE" />
       <Modal isOpen={isModalOpen} onOpenChange={setIsModalOpen} size="5xl">
         <ModalContent>
           {() => (

@@ -1,13 +1,14 @@
 // import balance_key from '../data/balance/key.js';
-import ents from '../data/industry.v2.json';
+import ENTS_SHENWAN from '../data/ents.shenwan.json';
+
+const ents = ENTS_SHENWAN.filter(e => !/^(20|900)/.test(e.SECCODE));
 
 export const ENT_DIC = {}; // 公司
 export const IND_DIC = {}; // 行业
 
 /** 填充数据 */
 for (const ent of ents) {
-  ent.SECURITY_CODE = ent.SECCODE.split('.')[0];
-  ENT_DIC[ent.SECURITY_CODE] = ent;
+  ENT_DIC[ent.SECCODE] = ent;
   if (!IND_DIC[ent.F011V]) {
     IND_DIC[ent.F011V] = [];
   }
@@ -16,8 +17,8 @@ for (const ent of ents) {
 
 export const ENT_OPTIONS = ents.map(item => {
   return {
-    label: item.SECURITY_CODE + ' - ' + item.SECNAME,
-    value: item.SECURITY_CODE,
+    label: item.SECCODE + ' - ' + item.SECNAME,
+    value: item.SECCODE,
   };
 });
 
@@ -85,11 +86,11 @@ export function getDates(count, start) {
 }
 
 export function getEntsOfSameInd(ent) {
-  return IND_DIC[ENT_DIC[ent].F011V].map(s => s.SECURITY_CODE);
+  return IND_DIC[ENT_DIC[ent].F011V].map(s => s.SECCODE);
 }
 
 export function fetchEntReport(ent, compare) {
-  const code = compare ? IND_DIC[ENT_DIC[ent].F011V].map(s => s.SECURITY_CODE).toString() : ent;
+  const code = compare ? IND_DIC[ENT_DIC[ent].F011V].map(s => s.SECCODE).toString() : ent;
   return fetch(`/api/ent/report?code=${code}`).then(res => res.json());
 }
 
@@ -160,10 +161,6 @@ export function calculateCAGR(beginningValue, endingValue, years) {
   return ((Math.abs(r)+1) ** (1 / years) - 1) * (r > 0 ? 1 : -1);
 }
 
-export function getValues(data, key, dates) {
-  return dates.map(date => data[date]?.[key]);
-}
-
 export function getRelativeDate(date, dy = 0, dm = 0, dd = 0) {
   const [y, m, d] = date.split('-').map(Number);
   return formatDate(y + dy, m + dm, d + dd);
@@ -188,18 +185,23 @@ export function getPrevQuarter(date) {
   return formatDate(y, m, d);
 }
 
+export function getFirstQuarter(date) {
+  const [y] = date.split('-').map(Number);
+  return formatDate(y, 3, 31);
+}
+
 /**
  * 计算同比
  * @param {*} data
  * @param {*} key
  * @param {*} date
  */
-export function addYOY(data) {
+export function addYOY(data, test = () => true) {
   Object.keys(data).filter(key => REPORT_DATE_REG.test(key)).forEach(date => {
     const prev = data[getRelativeDate(date, -1)];
     if (prev) {
       const curr = data[date];
-      Object.keys(curr).forEach(key => {
+      Object.keys(curr).filter(test).forEach(key => {
         const prevValue = prev[key],
           curValue = curr[key];
         if (typeof prevValue === 'number' && typeof curValue === 'number') {
@@ -246,4 +248,28 @@ export function buildIndex(values) {
     }
     return acc;
   }, {});
+}
+
+export function get(data, keys, dft) {
+  let result = data;
+  for (const key of keys) {
+    if (result === undefined) {
+      return dft;
+    }
+    if (typeof key === "function") {
+      result = key(result);
+    } else {
+      result = result[key];
+    }
+  }
+  return result === undefined ? dft : result;
+}
+
+export function getMarket(code) {
+  if (/^(30|00)/.test(code)) {
+    return "SZ";
+  } else if (/^(60|68)/.test(code)) {
+    return "SH";
+  }
+  return "BJ";
 }

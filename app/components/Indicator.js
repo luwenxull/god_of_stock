@@ -1,33 +1,34 @@
-'use client';
-import { useRef, useEffect, useState } from 'react';
-import Chart from 'chart.js/auto';
-import { percent, REPORT_DATE_REG } from '../util';
+"use client";
+import { useRef, useEffect, useState } from "react";
+import Chart from "chart.js/auto";
+import { formatNumber, percent, REPORT_DATE_REG } from "../util";
 // import { Segmented } from 'antd';
 
-Chart.defaults.font.family = 'serif';
+Chart.defaults.font.family = "serif";
 
-export default function ({ data, field, title }) {
+export default function ({ data, field, title, percent: __percent }) {
   const container = useRef();
   const chart = useRef();
-  const [reportType, setReportType] = useState('acc');
+  const [reportType, setReportType] = useState("acc");
   function setChartData() {
-    const labels = Object.keys(data).filter(key => REPORT_DATE_REG.test(key)).sort(
-      (a, b) => new Date(...a.split('-')) - new Date(...b.split('-'))
-    );
-    const _field = reportType === 'acc' ? field : `${field}_Q`;
+    const labels = Object.keys(data)
+      .filter((key) => REPORT_DATE_REG.test(key))
+      .sort((a, b) => new Date(...a.split("-")) - new Date(...b.split("-")))
+      .slice(0, -1);
+    const _field = reportType === "acc" ? field : `${field}_Q`;
     chart.current.data = {
       labels,
       datasets: [
         {
-          type: 'line',
-          label: '同比',
-          data: labels.map(label => data[label][`${_field}_YOY`]),
-          yAxisID: 'y2',
+          label: title,
+          data: labels.map((label) => data[label][_field]),
+          yAxisID: "y1",
         },
         {
-          label: title,
-          data: labels.map(label => data[label][_field]),
-          yAxisID: 'y1',
+          type: "line",
+          label: "同比",
+          data: labels.map((label) => data[label][`${_field}_YOY`]),
+          yAxisID: "y2",
         },
         // {
         //   type: 'line',
@@ -42,23 +43,23 @@ export default function ({ data, field, title }) {
   useEffect(() => {
     if (chart.current) return;
     chart.current = new Chart(container.current, {
-      type: 'bar',
+      type: "bar",
       data: {},
       options: {
         responsive: false,
         scales: {
           y1: {
             ticks: {
-              // callback: ticker,
+              callback: (v) => (__percent ? percent(v) : formatNumber(v)),
             },
             grid: {
               // display: false,
             },
           },
           y2: {
-            position: 'right',
+            position: "right",
             ticks: {
-              callback: v => percent(v),
+              callback: (v) => percent(v),
             },
             grid: {
               display: false,
@@ -71,14 +72,23 @@ export default function ({ data, field, title }) {
         //   },
         // },
         interaction: {
-          mode: 'index',
+          mode: "index",
           intersect: false,
         },
-        // plugins: {
-        //   title: {
-        //     display: true,
-        //   }
-        // }
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label(context) {
+                const label = `${context.dataset.label}: `;
+                if (context.dataset.yAxisID === "y1" && !__percent) {
+                  return label + formatNumber(context.parsed.y);
+                } else {
+                  return label + percent(context.parsed.y);
+                }
+              },
+            },
+          },
+        },
       },
     });
   }, []);
@@ -101,8 +111,8 @@ export default function ({ data, field, title }) {
       <canvas
         ref={container}
         style={{
-          height: '70vh',
-          width: '100%',
+          height: "70vh",
+          width: "100%",
         }}
       ></canvas>
     </>

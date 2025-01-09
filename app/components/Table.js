@@ -93,8 +93,11 @@ function Table(props) {
   const totalPage = Math.ceil(props.data.length / pageCount);
 
   return (
-    <div className="px-2">
-      <div className="overflow-auto bg-content1 rounded-large shadow-small">
+    <div className="p-2 h-full flex flex-col">
+      <div
+        className="overflow-auto bg-content1 rounded-large shadow-small max-h-max"
+        style={{ flex: "1 0 0" }}
+      >
         {props.loading ? (
           <Progress isIndeterminate className="w-full" size="sm" />
         ) : null}
@@ -175,7 +178,7 @@ function Table(props) {
       </div>
       {totalPage > 1 ? (
         <div className={`p-2 flex justify-end ${styles.page}`}>
-          <Pagination page={page} total={totalPage} onChange={setPage} />
+          <Pagination page={page} total={totalPage} onChange={setPage} showControls />
         </div>
       ) : null}
     </div>

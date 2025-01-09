@@ -1,6 +1,11 @@
 .table {
   white-space: pre;
   font-size: 12px;
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
   tr:nth-child(even) {
     th,
     td {
@@ -17,11 +22,17 @@
     &::after {
       content: "";
       position: absolute;
+      border-right: 1px solid #e0e0e066;
       top: 0;
       left: 0;
       bottom: 0;
       right: 0;
       z-index: -1;
+    }
+    &:last-child {
+      &::after {
+        border-right: none;
+      }
     }
     &.fixed-left {
       position: sticky;
@@ -29,7 +40,7 @@
     }
     &:nth-last-child(1 of .fixed-left) {
       &::after {
-        border-right: 1px solid #e0e0e066;
+        // border-right: 1px solid #e0e0e066;
       }
     }
   }
