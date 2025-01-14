@@ -255,7 +255,7 @@ export async function POST(request) {
       fs.writeFileSync(`${process.cwd()}/data/ent_v2/${val.SECURITY_CODE}.json`, JSON.stringify(obj));
     }
   }
-  return Response.json("OK");
+  return new Response("OK");
 }
 
 export async function GET(request) {

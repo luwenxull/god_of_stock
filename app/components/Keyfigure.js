@@ -16,6 +16,18 @@ import { addYOY, buildIndex, formatNumber, get, getDates, getMarket, percent, RE
 import Indicator from "./Indicator.js";
 import Table from "./Table.js";
 
+function Star(props) {
+  return (
+    <svg viewBox="0 0 1024 1024" className="cursor-pointer" width="12" height="12" onClick={props.onClick}>
+      <path
+        fill={props.fill}
+        d="M908.1 353.1l-253.9-36.9L540.7 86.1c-3.1-6.3-8.2-11.4-14.5-14.5-15.8-7.8-35-1.3-42.9 14.5L369.8 316.2l-253.9 36.9c-7 1-13.4 4.3-18.3 9.3-12.3 12.7-12.1 32.9 0.6 45.3l183.7 179.1-43.4 252.9c-1.2 6.9-0.1 14.1 3.2 20.3 8.2 15.6 27.6 21.7 43.2 13.4L512 754l227.1 119.4c6.2 3.3 13.4 4.4 20.3 3.2 17.4-3 29.1-19.5 26.1-36.9l-43.4-252.9 183.7-179.1c5-4.9 8.3-11.3 9.3-18.3 2.7-17.5-9.5-33.7-27-36.3zM664.8 561.6l36.1 210.3L512 672.7 323.1 772l36.1-210.3-152.8-149L417.6 382 512 190.7 606.4 382l211.2 30.7-152.8 148.9z"
+        p-id="7474"
+      ></path>
+    </svg>
+  );
+}
+
 export default function Keyfigure(props) {
   useImperativeHandle(props.ref, () => ({
     refresh: fetchData,
@@ -28,6 +40,7 @@ export default function Keyfigure(props) {
   });
   const [source, setSource] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [marked, setMarked] = useState({});
 
   const rawColumns = [
     {
@@ -46,7 +59,17 @@ export default function Keyfigure(props) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent>
-                  <div className="p-2 flex gap-2">
+                  <div className="p-2 flex gap-2 items-center">
+                    <Star
+                      onClick={() => {
+                        fetch(`/api/ent/marked?code=${data.SECCODE}`, {
+                          method: marked[data.SECCODE] ? "DELETE" : "POST",
+                        })
+                          .then((res) => res.json())
+                          .then(setMarked);
+                      }}
+                      fill={marked[data.SECCODE] ? "red" : "gray"}
+                    />
                     <Link
                       href={`https://basic.10jqka.com.cn/astockph/briefinfo/index.html?showhead=0&code=${
                         data.SECCODE
@@ -74,7 +97,25 @@ export default function Keyfigure(props) {
         },
         {
           title: "名称",
-          render: (_, data) => data.SECNAME,
+          render: (_, data) => {
+            return (
+              <div className="flex gap-1 items-center">
+                <span>{data.SECNAME}</span>
+                {marked[data.SECCODE] ? (
+                  <Star
+                    onClick={() => {
+                      fetch(`/api/ent/marked?code=${data.SECCODE}`, {
+                        method: marked[data.SECCODE] ? "DELETE" : "POST",
+                      })
+                        .then((res) => res.json())
+                        .then(setMarked);
+                    }}
+                    fill={marked[data.SECCODE] ? "red" : "gray"}
+                  />
+                ) : null}
+              </div>
+            );
+          },
           fixed: "left",
         },
         {
@@ -411,6 +452,14 @@ export default function Keyfigure(props) {
     return stats;
   }, [source]);
 
+  useEffect(() => {
+    fetch("/api/ent/marked")
+      .then((res) => res.json())
+      .then((data) => {
+        setMarked(data);
+      });
+  }, []);
+
   const columns = useMemo(() => {
     function handleColumn(column) {
       const { dataIndex: key, __percent, __stat = true, title, children = [] } = column;
@@ -482,7 +531,7 @@ export default function Keyfigure(props) {
       handleColumn(column);
     }
     return rawColumns;
-  }, [stats, props.date]);
+  }, [stats, marked, props.date]);
 
   function fetchData() {
     if (props.ents.length === 0) {
