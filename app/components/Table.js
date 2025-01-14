@@ -38,10 +38,7 @@ function colspan(col) {
 
 function offsetLeft(el) {
   if (el.previousElementSibling) {
-    return (
-      el.previousElementSibling.clientWidth +
-      offsetLeft(el.previousElementSibling)
-    );
+    return el.previousElementSibling.clientWidth + offsetLeft(el.previousElementSibling);
   }
   return 0;
 }
@@ -81,43 +78,36 @@ function Table(props) {
   }, [page, sorter, props.data]);
 
   useEffect(() => {
-    Array.from(tableRef.current.querySelectorAll("[data-fixed]")).forEach(
-      (td) => {
-        if (td.getAttribute("data-fixed") === "left") {
-          td.style.left = offsetLeft(td) + "px";
-        }
+    Array.from(tableRef.current.querySelectorAll("[data-fixed]")).forEach((td) => {
+      if (td.getAttribute("data-fixed") === "left") {
+        td.style.left = offsetLeft(td) + "px";
       }
-    );
+    });
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [props.data]);
 
   const totalPage = Math.ceil(props.data.length / pageCount);
 
   return (
     <div className="p-2 h-full flex flex-col">
-      <div
-        className="overflow-auto bg-content1 rounded-large shadow-small max-h-max"
-        style={{ flex: "1 0 0" }}
-      >
-        {props.loading ? (
-          <Progress isIndeterminate className="w-full" size="sm" />
-        ) : null}
+      <div className="overflow-auto bg-content1 rounded-large shadow-small max-h-max" style={{ flex: "1 0 0" }}>
+        {props.loading ? <Progress isIndeterminate className="w-full" size="sm" /> : null}
         <table className={styles.table} ref={tableRef}>
           <thead>
             {colsByDepth.map((cols, depth) => (
               <tr className="" key={depth}>
                 {cols.map((col) => (
                   <th
-                    className={`py-2 px-4 ${
-                      col.fixed === "left" ? styles["fixed-left"] : ""
-                    }`}
+                    className={`py-2 px-4 ${col.fixed === "left" ? styles["fixed-left"] : ""}`}
                     colSpan={colspan(col)}
                     data-fixed={col.fixed}
                     key={col.id}
                   >
                     <div
-                      className={`flex items-center justify-center ${
-                        col.sorter ? "cursor-pointer" : ""
-                      }`}
+                      className={`flex items-center justify-center ${col.sorter ? "cursor-pointer" : ""}`}
                       onClick={() => {
                         if (col.sorter) {
                           handleSort(col);
@@ -144,10 +134,7 @@ function Table(props) {
                               fill="#000000"
                             ></path>
                           ) : (
-                            <path
-                              d="M576 873.6V128h64v591.36l194.24-194.24 45.44 45.12z"
-                              fill="#000000"
-                            ></path>
+                            <path d="M576 873.6V128h64v591.36l194.24-194.24 45.44 45.12z" fill="#000000"></path>
                           )}
                         </svg>
                       ) : null}
@@ -162,9 +149,7 @@ function Table(props) {
               <tr key={row[props.rowKey]} className={index % 2 === 0 ? "" : ""}>
                 {deepest.map((col) => (
                   <td
-                    className={`py-2 px-4 ${
-                      col.fixed === "left" ? styles["fixed-left"] : ""
-                    }`}
+                    className={`py-2 px-4 ${col.fixed === "left" ? styles["fixed-left"] : ""}`}
                     data-fixed={col.fixed}
                     key={col.id}
                   >

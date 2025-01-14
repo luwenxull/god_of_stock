@@ -2,16 +2,38 @@ export function handleEntData(ents, type) {
   const entDic = {}; // 公司
   const indDic = {}; // 行业
 
-  const indKey = type === "SHENWAN" ? "F011V" : "F012V";
-
   /** 填充数据 */
   for (const ent of ents) {
-    entDic[ent.SECCODE] = ent;
-    if (!indDic[ent[indKey]]) {
-      indDic[ent[indKey]] = [];
+    const { F009V, F010V, F011V, F012V, F004V, F005V, F006V, F007V, SECCODE } = ent;
+    entDic[SECCODE] = ent;
+    if (!indDic[F009V]) {
+      indDic[F009V] = {
+        __name: F004V,
+      };
     }
-    indDic[ent[indKey]].push(ent);
+    if (!indDic[F009V][F010V]) {
+      indDic[F009V][F010V] = {
+        __name: F005V,
+      };
+    }
+    if (!indDic[F009V][F010V][F011V]) {
+      indDic[F009V][F010V][F011V] = {
+        __name: F006V,
+      };
+    }
+    if (F012V) {
+      if (!indDic[F009V][F010V][F011V][F012V]) {
+        indDic[F009V][F010V][F011V][F012V] = {
+          __name: F007V,
+        };
+      }
+      indDic[F009V][F010V][F011V][F012V][SECCODE] = ent;
+    } else {
+      indDic[F009V][F010V][F011V][SECCODE] = ent;
+    }
   }
+
+  console.log(indDic);
 
   const options = ents.map((item) => {
     return {
@@ -22,7 +44,6 @@ export function handleEntData(ents, type) {
 
   return {
     all: ents,
-    indKey,
     entDic,
     indDic,
     options,
@@ -104,8 +125,10 @@ export function getDates(count, start) {
 }
 
 export function getEntsOfSameInd(ent, entsInfo) {
-  const { entDic, indDic, indKey } = entsInfo;
-  return indDic[entDic[ent][indKey]];
+  const { indDic } = entsInfo,
+    { F009V, F010V, F011V, F012V } = ent,
+    ents = F012V ? indDic[F009V][F010V][F011V][F012V] : indDic[F009V][F010V][F011V];
+  return Object.values(ents).filter((e) => typeof e === "object");
 }
 
 export function getLastFiveYear() {
