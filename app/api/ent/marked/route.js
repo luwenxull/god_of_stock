@@ -28,33 +28,15 @@ export async function GET(request) {
 // 可能会有同时写入的情况，这里没有做并发控制
 export async function POST(request) {
   const code = request.nextUrl.searchParams.get("code");
+  const val = await request.json();
   return new Promise((rsv, rjc) => {
     fs.readFile(`${process.cwd()}/data/marked.json`, "utf8", (err, data) => {
       if (err) {
         reject(err);
       }
-      const marked = JSON.parse(data);
-      marked[code] = 1;
-      fs.writeFile(`${process.cwd()}/data/marked.json`, JSON.stringify(marked), "utf8", (err) => {
-        if (err) {
-          rjc(err);
-        } else {
-          rsv(Response.json(marked));
-        }
-      });
-    });
-  });
-}
-
-export async function DELETE(request) {
-  const code = request.nextUrl.searchParams.get("code");
-  return new Promise((rsv, rjc) => {
-    fs.readFile(`${process.cwd()}/data/marked.json`, "utf8", (err, data) => {
-      if (err) {
-        reject(err);
-      }
-      const marked = JSON.parse(data);
-      delete marked[code];
+      const marked = JSON.parse(data),
+        prevValue = marked[code] || {};
+      marked[code] = { ...prevValue, ...val };
       fs.writeFile(`${process.cwd()}/data/marked.json`, JSON.stringify(marked), "utf8", (err) => {
         if (err) {
           rjc(err);

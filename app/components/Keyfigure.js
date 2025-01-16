@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect, useImperativeHandle } from "react";
 import {
   Button,
+  Input,
   Link,
   Modal,
   ModalBody,
@@ -11,12 +12,13 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Tooltip,
 } from "@nextui-org/react";
 import { addYOY, buildIndex, formatNumber, get, getDates, getMarket, percent, REPORT_DATE_REG } from "../util.js";
 import Indicator from "./Indicator.js";
 import Table from "./Table.js";
 
-function Star(props) {
+function StarIcon(props) {
   return (
     <svg viewBox="0 0 1024 1024" className="cursor-pointer" width="12" height="12" onClick={props.onClick}>
       <path
@@ -25,6 +27,52 @@ function Star(props) {
         p-id="7474"
       ></path>
     </svg>
+  );
+}
+
+function CommentIcon() {
+  return (
+    <svg viewBox="0 0 1024 1024" className="cursor-pointer" width="12" height="12">
+      <path
+        d="M725.333333 149.333333H298.666667A192.298667 192.298667 0 0 0 106.666667 341.333333v554.666667a21.333333 21.333333 0 0 0 13.226666 19.626667 18.474667 18.474667 0 0 0 8.106667 1.706666 20.010667 20.010667 0 0 0 14.933333-6.4l103.253334-102.826666a64 64 0 0 1 45.226666-18.773334H725.333333a192.298667 192.298667 0 0 0 192-192V341.333333A192.298667 192.298667 0 0 0 725.333333 149.333333z m-384 373.333334A53.333333 53.333333 0 1 1 394.666667 469.333333 53.333333 53.333333 0 0 1 341.333333 522.666667z m170.666667 0A53.333333 53.333333 0 1 1 565.333333 469.333333 53.333333 53.333333 0 0 1 512 522.666667z m170.666667 0A53.333333 53.333333 0 1 1 736 469.333333 53.333333 53.333333 0 0 1 682.666667 522.666667z"
+        fill="#2c2c2c"
+        p-id="5920"
+      ></path>
+    </svg>
+  );
+}
+
+function Comment(props) {
+  const [inEditMode, setInEditMode] = useState(false);
+  const [content, setContent] = useState(props.content || "");
+  return inEditMode ? (
+    <Input
+      size="sm"
+      placeholder="输入笔记内容"
+      value={content}
+      onValueChange={setContent}
+      endContent={
+        <Button
+          size="sm"
+          variant="light"
+          isIconOnly
+          onPress={() => {
+            props.onSave(content);
+          }}
+        >
+          <svg viewBox="0 0 1024 1024" width="12" height="12">
+            <path
+              d="M874.322026 254.904551l-389.17358 506.198877c-3.530406 4.594645-8.861832 7.480368-14.643512 7.930623-0.532119 0.040932-1.054005 0.061398-1.586125 0.061398-5.229095 0-10.284227-2.00568-14.101159-5.64865l-210.013131-199.8824-32.397874 42.149982c-6.897084 8.953929-19.739577 10.642384-28.703739 3.745301-8.964162-6.886851-10.642384-19.739577-3.745301-28.693506l46.263673-60.180638c3.540639-4.594645 8.861832-7.480368 14.643512-7.930623s11.491729 1.586125 15.687284 5.587252l210.013131 199.8824 375.297548-488.168222c6.897084-8.964162 19.739577-10.642384 28.703739-3.755534C879.530654 233.097896 881.208876 245.940388 874.322026 254.904551z"
+              p-id="17730"
+            ></path>
+          </svg>
+        </Button>
+      }
+    />
+  ) : (
+    <Button size="sm" variant="light" isIconOnly onPress={setInEditMode}>
+      <CommentIcon />
+    </Button>
   );
 }
 
@@ -60,34 +108,58 @@ export default function Keyfigure(props) {
                 </PopoverTrigger>
                 <PopoverContent>
                   <div className="p-2 flex gap-2 items-center">
-                    <Star
-                      onClick={() => {
+                    <Button
+                      size="sm"
+                      variant="light"
+                      isIconOnly
+                      onPress={() => {
                         fetch(`/api/ent/marked?code=${data.SECCODE}`, {
-                          method: marked[data.SECCODE] ? "DELETE" : "POST",
+                          method: "POST",
+                          body: JSON.stringify({
+                            f: get(marked, [data.SECCODE, "f"]) ? 0 : 1,
+                          }),
                         })
                           .then((res) => res.json())
                           .then(setMarked);
                       }}
-                      fill={marked[data.SECCODE] ? "red" : "gray"}
+                    >
+                      <StarIcon fill={get(marked, [data.SECCODE, "f"]) ? "red" : "gray"} />
+                    </Button>
+                    <Comment
+                      content={get(marked, [data.SECCODE, "c"])}
+                      onSave={(content) => {
+                        fetch(`/api/ent/marked?code=${data.SECCODE}`, {
+                          method: "POST",
+                          body: JSON.stringify({
+                            c: content,
+                          }),
+                        })
+                          .then((res) => res.json())
+                          .then(setMarked);
+                      }}
                     />
-                    <Link
-                      href={`https://basic.10jqka.com.cn/astockph/briefinfo/index.html?showhead=0&code=${
-                        data.SECCODE
-                      }&marketid=${market === "SH" ? "17" : "33"}`}
-                      target="_blank"
-                      size="sm"
-                    >
-                      同花顺
-                    </Link>
-                    <Link
-                      href={`https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=${
-                        market + data.SECCODE
-                      }&color=b#/cwfx`}
-                      target="_blank"
-                      size="sm"
-                    >
-                      东方财富
-                    </Link>
+                    <Button size="sm" variant="light">
+                      <Link
+                        href={`https://basic.10jqka.com.cn/astockph/briefinfo/index.html?showhead=0&code=${
+                          data.SECCODE
+                        }&marketid=${market === "SH" ? "17" : "33"}`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        同花顺
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="light">
+                      <Link
+                        href={`https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=${
+                          market + data.SECCODE
+                        }&color=b#/cwfx`}
+                        target="_blank"
+                        size="sm"
+                      >
+                        东方财富
+                      </Link>
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -101,16 +173,31 @@ export default function Keyfigure(props) {
             return (
               <div className="flex gap-1 items-center">
                 <span>{data.SECNAME}</span>
-                {marked[data.SECCODE] ? (
-                  <Star
+                {get(marked, [data.SECCODE, "c"]) ? (
+                  <Tooltip
+                    content={<span className="text-xs">{get(marked, [data.SECCODE, "c"])}</span>}
+                    isDisabled={!get(marked, [data.SECCODE, "c"])}
+                    delay={1000}
+                    color="primary"
+                  >
+                    <span>
+                      <CommentIcon />
+                    </span>
+                  </Tooltip>
+                ) : null}
+                {get(marked, [data.SECCODE, "f"]) ? (
+                  <StarIcon
                     onClick={() => {
                       fetch(`/api/ent/marked?code=${data.SECCODE}`, {
-                        method: marked[data.SECCODE] ? "DELETE" : "POST",
+                        method: "POST",
+                        body: JSON.stringify({
+                          f: get(marked, [data.SECCODE, "f"]) ? 0 : 1,
+                        }),
                       })
                         .then((res) => res.json())
                         .then(setMarked);
                     }}
-                    fill={marked[data.SECCODE] ? "red" : "gray"}
+                    fill="red"
                   />
                 ) : null}
               </div>
@@ -146,8 +233,8 @@ export default function Keyfigure(props) {
           __score: 2,
         },
         {
-          title: "与成本差",
-          dataIndex: "OPERATE_INCOME_CARG_DIFF_COST",
+          title: "成本增速差",
+          dataIndex: "OPERATE_INCOME_DIFF_COST_CARG",
           __percent: true,
           __score: 1,
         },
@@ -299,6 +386,12 @@ export default function Keyfigure(props) {
           dataIndex: "NOTE_ACCOUNTS_RECE_ASSETS",
           __percent: true,
           __reverse: true,
+        },
+        {
+          title: "营收增速差",
+          dataIndex: "OPERATE_INCOME_DIFF_NAR_CARG",
+          __percent: true,
+          __score: 1,
         },
         {
           title: "长期待摊费用占比",

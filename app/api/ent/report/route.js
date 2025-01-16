@@ -138,7 +138,7 @@ function buildKeyfigure(records) {
           OPERATE_INCOME: _gp("OPERATE_INCOME"),
           // OPERATE_INCOME_Q: _getQ(data.profit, "OPERATE_INCOME"),
           OPERATE_INCOME_CARG,
-          OPERATE_INCOME_CARG_DIFF_COST: OPERATE_INCOME_CARG - OPERATE_COST_CARG,
+          OPERATE_INCOME_DIFF_COST_CARG: OPERATE_INCOME_CARG - OPERATE_COST_CARG,
           OPERATE_COST: _gp("OPERATE_COST"),
           // OPERATE_COST_Q: _getQ(data.profit, "OPERATE_COST"),
           OPERATE_COST_CARG,
@@ -177,6 +177,8 @@ function buildKeyfigure(records) {
           // INVENTORY_CARG: genCARG3(data.balance, "INVENTORY", date),
           // 应收账款占比
           NOTE_ACCOUNTS_RECE_ASSETS: _gb("NOTE_ACCOUNTS_RECE") / _gb("TOTAL_ASSETS"),
+          // 应收账款三年增速
+          OPERATE_INCOME_DIFF_NAR_CARG: OPERATE_INCOME_CARG - genCARG3(data.balance, "NOTE_ACCOUNTS_RECE", date),
           // NOTE_ACCOUNTS_RECE_CARG: genCARG3(
           //   data.balance,
           //   "NOTE_ACCOUNTS_RECE",
