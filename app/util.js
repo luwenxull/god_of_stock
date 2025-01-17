@@ -33,8 +33,6 @@ export function handleEntData(ents, type) {
     }
   }
 
-  console.log(indDic);
-
   const options = ents.map((item) => {
     return {
       label: item.SECCODE + " - " + item.SECNAME,

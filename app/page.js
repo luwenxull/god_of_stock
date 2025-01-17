@@ -93,7 +93,6 @@ export default function App() {
         <Button
           color="primary"
           onPress={() => {
-            debugger;
             if (ref.current) {
               ref.current.refresh();
             }

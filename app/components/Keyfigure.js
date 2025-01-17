@@ -271,6 +271,12 @@ export default function Keyfigure(props) {
           __percent: true,
         },
         {
+          title: "三年复合增速",
+          dataIndex: "CORE_PROFIT_CARG",
+          __percent: true,
+          __score: 2,
+        },
+        {
           title: "净利润",
           dataIndex: "NETPROFIT",
           __score: 1,
@@ -281,12 +287,12 @@ export default function Keyfigure(props) {
           __score: 0.5,
           __percent: true,
         },
-        {
-          title: "三年复合增速",
-          dataIndex: "NETPROFIT_CARG",
-          __percent: true,
-          __score: 2,
-        },
+        // {
+        //   title: "三年复合增速",
+        //   dataIndex: "NETPROFIT_CARG",
+        //   __percent: true,
+        //   __score: 2,
+        // },
       ],
     },
     {
@@ -405,13 +411,13 @@ export default function Keyfigure(props) {
         //   __percent: true,
         // },
         {
-          title: "折旧率",
+          title: "折旧损失",
           dataIndex: "DEPRECIATION",
           __percent: true,
           __score: 0.5,
         },
         {
-          title: "坏账率",
+          title: "坏账损失",
           dataIndex: "BAD_DEBT",
           __percent: true,
           __score: 0.5,
@@ -421,6 +427,12 @@ export default function Keyfigure(props) {
           dataIndex: "NETPROFIT_HEAVY_ASSETS",
           __percent: true,
           __score: 0.5,
+        },
+        {
+          title: "产能扩张",
+          dataIndex: "HEAVY_ASSETS_YOY",
+          __percent: true,
+          __score: 0,
         },
       ],
     },

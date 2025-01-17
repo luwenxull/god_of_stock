@@ -2,7 +2,6 @@
 import { useRef, useEffect, useState } from "react";
 import Chart from "chart.js/auto";
 import { formatNumber, percent, REPORT_DATE_REG } from "../util";
-// import { Segmented } from 'antd';
 
 Chart.defaults.font.family = "serif";
 

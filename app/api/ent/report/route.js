@@ -78,6 +78,15 @@ function buildKeyfigure(records) {
           return _getA(data, key, dft) - get(data, [getPrevQuarter(date), key], dft);
         }
 
+        const f_core_profit = (p) =>
+          p.OPERATE_INCOME -
+          (p.OPERATE_COST +
+            p.SALE_EXPENSE +
+            p.MANAGE_EXPENSE +
+            p.RESEARCH_EXPENSE +
+            p.FINANCE_EXPENSE +
+            p.OPERATE_TAX_ADD);
+
         // const [CORE_PROFIT, CORE_PROFIT_Q] = _get(
         //   data.profit,
         //   (profit) =>
@@ -93,13 +102,8 @@ function buildKeyfigure(records) {
         const OPERATE_INCOME_CARG = genCARG3(data.profit, "OPERATE_INCOME", date);
         const OPERATE_COST_CARG = genCARG3(data.profit, "OPERATE_COST", date);
         const GROSS_PROFIT = _gp("OPERATE_INCOME") - _gp("OPERATE_COST");
-        const CORE_PROFIT =
-          GROSS_PROFIT -
-          _gp("SALE_EXPENSE") -
-          _gp("MANAGE_EXPENSE") -
-          _gp("RESEARCH_EXPENSE") -
-          _gp("FINANCE_EXPENSE") -
-          _gp("OPERATE_TAX_ADD");
+
+        const CORE_PROFIT = get(data.profit, [date, f_core_profit], 0);
         /* 理杏仁算法 */
         // const INTEREST_DEBT =
         //   _gb("TOTAL_LIABILITIES") -
@@ -144,6 +148,7 @@ function buildKeyfigure(records) {
           OPERATE_COST_CARG,
           GROSS_PROFIT,
           CORE_PROFIT,
+          CORE_PROFIT_CARG: genCARG3(data.profit, f_core_profit, date),
           // CORE_PROFIT_Q,
           NETPROFIT: _gp("NETPROFIT"),
           // NETPROFIT_Q: _getQ(data.profit, "NETPROFIT"),
@@ -219,9 +224,10 @@ function buildKeyfigure(records) {
             _gb("TRADE_FINASSET_NOTFVTPL") +
             _gb("NONCURRENT_ASSET_1YEAR") -
             (_gb("SHORT_LOAN") + _gb("BORROW_FUND") + _gb("TRADE_FINLIAB_NOTFVTPL") + _gb("NONCURRENT_LIAB_1YEAR")),
-          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / _gb("TOTAL_EQUITY"),
-          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / _gb("TOTAL_EQUITY"),
+          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / Math.abs(CORE_PROFIT),
+          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / Math.abs(CORE_PROFIT),
           NETPROFIT_HEAVY_ASSETS: _gp("NETPROFIT") / HEAVY_ASSETS,
+          HEAVY_ASSETS,
           // FINANCING_RATE: INTEREST_DEBT_AVG === 0 ? 0 : _gp("FE_INTEREST_EXPENSE") / INTEREST_DEBT_AVG,
           LPE: _gb("LONG_PREPAID_EXPENSE") / _gb("TOTAL_EQUITY"),
           GOODWILL: _gb("GOODWILL") / _gb("TOTAL_EQUITY"),
@@ -243,7 +249,7 @@ export async function POST(request) {
       try {
         obj = JSON.parse(fs.readFileSync(`${process.cwd()}/data/ent_v2/${val.SECURITY_CODE}.json`, "utf8"));
       } catch (e) {
-        console.error(e.message);
+        // console.error(e.message);
       }
       if (!obj[type]) {
         obj[type] = {}; // 写入到对应的报表字段
