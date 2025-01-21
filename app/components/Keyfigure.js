@@ -173,18 +173,6 @@ export default function Keyfigure(props) {
             return (
               <div className="flex gap-1 items-center">
                 <span>{data.SECNAME}</span>
-                {get(marked, [data.SECCODE, "c"]) ? (
-                  <Tooltip
-                    content={<span className="text-xs">{get(marked, [data.SECCODE, "c"])}</span>}
-                    isDisabled={!get(marked, [data.SECCODE, "c"])}
-                    delay={1000}
-                    color="primary"
-                  >
-                    <span>
-                      <CommentIcon />
-                    </span>
-                  </Tooltip>
-                ) : null}
                 {get(marked, [data.SECCODE, "f"]) ? (
                   <StarIcon
                     onClick={() => {
@@ -199,6 +187,18 @@ export default function Keyfigure(props) {
                     }}
                     fill="red"
                   />
+                ) : null}
+                {get(marked, [data.SECCODE, "c"]) ? (
+                  <Tooltip
+                    content={<span className="text-xs">{get(marked, [data.SECCODE, "c"])}</span>}
+                    isDisabled={!get(marked, [data.SECCODE, "c"])}
+                    delay={1000}
+                    color="primary"
+                  >
+                    <span>
+                      <CommentIcon />
+                    </span>
+                  </Tooltip>
                 ) : null}
               </div>
             );
@@ -302,13 +302,13 @@ export default function Keyfigure(props) {
           title: "净资产收益率",
           dataIndex: "ROE",
           __percent: true,
-          __score: 2,
+          __score: 3,
         },
-        {
-          title: "总资产收益率",
-          dataIndex: "ROA",
-          __percent: true,
-        },
+        // {
+        //   title: "总资产收益率",
+        //   dataIndex: "ROA",
+        //   __percent: true,
+        // },
         {
           title: "毛利率",
           dataIndex: "GPM",
@@ -341,16 +341,16 @@ export default function Keyfigure(props) {
           __percent: true,
           __score: 0.5,
         },
-        {
-          title: "销售现金净额",
-          dataIndex: "SALES_SERVICES",
-          __score: 0.5,
-        },
+        // {
+        //   title: "销售现金净额",
+        //   dataIndex: "NETCASH_OPERATE",
+        //   __score: 0,
+        // },
         {
           title: "现金报酬率",
-          dataIndex: "CASH_RECOVERY",
+          dataIndex: "CROE",
           __percent: true,
-          __score: 1.5,
+          __score: 2,
         },
       ],
     },
@@ -422,22 +422,10 @@ export default function Keyfigure(props) {
           __percent: true,
           __score: 0.5,
         },
-        {
-          title: "重资产收益率",
-          dataIndex: "NETPROFIT_HEAVY_ASSETS",
-          __percent: true,
-          __score: 0.5,
-        },
-        {
-          title: "产能扩张",
-          dataIndex: "HEAVY_ASSETS_YOY",
-          __percent: true,
-          __score: 0,
-        },
       ],
     },
     {
-      title: "营运能力",
+      title: "运营能力",
       children: [
         {
           title: "应收账款周转率",
@@ -477,13 +465,61 @@ export default function Keyfigure(props) {
       ],
     },
     {
-      title: "上下游地位",
+      title: "其他",
       children: [
         {
           title: "资金占用率",
           dataIndex: "OCCUPIED_FUNDS",
           __percent: true,
           __score: 0.5,
+        },
+        {
+          title: "生产资料回报率",
+          dataIndex: "ROPA",
+          __percent: true,
+          __score: 0.5,
+        },
+        {
+          title: "生产资料占比",
+          dataIndex: "PRODUCTIVE_ASSETS_RATIO",
+          __percent: true,
+          __score: 0,
+        },
+        {
+          title: "生产资料扩张",
+          dataIndex: "PRODUCTIVE_ASSETS_YOY",
+          __percent: true,
+          __score: 0,
+        },
+        // {
+        //   title: "生产资料投资",
+        //   dataIndex: "INVEST_RATIO",
+        //   __percent: true,
+        //   __score: 0,
+        // },
+        {
+          title: '研发费用率',
+          dataIndex: 'RESEARCH_EXPENSE',
+          __percent: true,
+          __score: 0,
+        },
+        {
+          title: '销售费用率',
+          dataIndex: 'SALE_EXPENSE',
+          __percent: true,
+          __score: 0,
+        },
+        {
+          title: '管理费用率',
+          dataIndex: 'MANAGE_EXPENSE',
+          __percent: true,
+          __score: 0,
+        },
+        {
+          title: '财务费用率',
+          dataIndex: 'FINANCE_EXPENSE',
+          __percent: true,
+          __score: 0,
         },
       ],
     },

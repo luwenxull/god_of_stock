@@ -86,7 +86,12 @@ export function splitArrayIntoChunks(array, chunkSize) {
 }
 
 export function formatDate(y, m, d) {
-  return `${y}-${m < 10 ? "0" + m : m}-${d < 10 ? "0" + d : d}`;
+  // return `${y}-${m < 10 ? "0" + m : m}-${d < 10 ? "0" + d : d}`;
+  const date = new Date(y, m - 1, d),
+    year = date.getFullYear(),
+    month = date.getMonth() + 1,
+    day = date.getDate();
+  return `${year}-${month < 10 ? "0" + month : month}-${day < 10 ? "0" + day : day}`;
 }
 
 export function getDates(count, start) {
@@ -206,8 +211,8 @@ export function percent(value, dc = 2) {
 }
 
 export function getPrevQuarter(date) {
-  let prevDate = getRelativeDate(date, 0, -3);
-  let [y, m, d] = prevDate.split("-").map(Number);
+  let [y, m, d] = date.split("-").map(Number);
+  m -= 3; // 上一季度
   if (m === 0) {
     y -= 1;
     m = 12;
@@ -223,6 +228,13 @@ export function getPrevQuarter(date) {
 export function getFirstQuarter(date) {
   const [y] = date.split("-").map(Number);
   return formatDate(y, 3, 31);
+}
+
+export function getTTMQuarter(date) {
+  const prev1 = getPrevQuarter(date),
+    prev2 = getPrevQuarter(prev1),
+    prev3 = getPrevQuarter(prev2);
+  return [date, prev1, prev2, prev3];
 }
 
 /**

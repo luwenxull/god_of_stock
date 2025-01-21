@@ -1,4 +1,12 @@
-import { calculateCAGR, get, getDates, getFirstQuarter, getPrevQuarter, getRelativeDate } from "@/app/util";
+import {
+  calculateCAGR,
+  get,
+  getDates,
+  getFirstQuarter,
+  getPrevQuarter,
+  getRelativeDate,
+  getTTMQuarter,
+} from "@/app/util";
 import zlib from "zlib";
 import fs from "fs";
 // import path from 'path'
@@ -47,57 +55,48 @@ function buildKeyfigure(records) {
   return records.map((data) =>
     getDates(20).reduce(
       (keyfigure, date) => {
-        function _gp(key, dft = 0) {
-          return get(data.profit, [date, key], dft);
+        function _gp(key, d = date, dft = 0) {
+          return get(data.profit, [d, key], dft);
         }
 
-        function _gb(key, dft = 0) {
-          return get(data.balance, [date, key], dft);
+        function _gb(key, d = date, dft = 0) {
+          return get(data.balance, [d, key], dft);
         }
 
-        function _gc(key, dft = 0) {
-          return get(data.cash, [date, key], dft);
+        function _gc(key, d = date, dft = 0) {
+          return get(data.cash, [d, key], dft);
         }
 
-        function _g_avg(data, dates, key, dft = 0) {
-          const values = dates.map((date) => get(data, [date, key])).filter((value) => typeof value === "number");
+        function _g_avg(g, key, dates, dft = 0) {
+          const values = dates.map((date) => g(key, date, null)).filter((value) => typeof value === "number");
           if (values.length === 0) {
             return dft;
           }
           return values.reduce((acc, value) => acc + value, 0) / values.length;
         }
 
-        function _getA(data, key, dft) {
-          return get(data, [date, key], dft);
+        function _g_ttm(g, key, d = date, dft = 0) {
+          return getTTMQuarter(d)
+            .map((date) => _g_q(g, key, date, dft))
+            .filter((value) => typeof value === "number")
+            .reduce((acc, value) => acc + value, 0);
         }
 
-        function _getQ(data, key, dft) {
-          if (date.split("-")[1] === "03") {
-            return _getA(data, key, dft);
+        function _g_q(g, key, d = date, dft = 0) {
+          if (d.split("-")[1] === "03") {
+            return g(key, d, dft);
           }
-          return _getA(data, key, dft) - get(data, [getPrevQuarter(date), key], dft);
+          return g(key, d, dft) - g(key, getPrevQuarter(d), dft);
         }
 
         const f_core_profit = (p) =>
-          p.OPERATE_INCOME -
-          (p.OPERATE_COST +
-            p.SALE_EXPENSE +
-            p.MANAGE_EXPENSE +
-            p.RESEARCH_EXPENSE +
-            p.FINANCE_EXPENSE +
-            p.OPERATE_TAX_ADD);
-
-        // const [CORE_PROFIT, CORE_PROFIT_Q] = _get(
-        //   data.profit,
-        //   (profit) =>
-        //     get(profit, ["OPERATE_INCOME"]) -
-        //     (get(profit, ["OPERATE_COST"]) +
-        //       get(profit, ["SALE_EXPENSE"], 0) +
-        //       get(profit, ["MANAGE_EXPENSE"], 0) +
-        //       get(profit, ["RESEARCH_EXPENSE"], 0) +
-        //       get(profit, ["FINANCE_EXPENSE"], 0) +
-        //       get(profit, ["OPERATE_TAX_ADD"], 0))
-        // );
+          get(p, ["OPERATE_INCOME"], 0) -
+          (get(p, ["OPERATE_COST"], 0) +
+            get(p, ["SALE_EXPENSE"], 0) +
+            get(p, ["MANAGE_EXPENSE"], 0) +
+            get(p, ["RESEARCH_EXPENSE"], 0) +
+            get(p, ["FINANCE_EXPENSE"], 0) +
+            get(p, ["OPERATE_TAX_ADD"], 0));
 
         const OPERATE_INCOME_CARG = genCARG3(data.profit, "OPERATE_INCOME", date);
         const OPERATE_COST_CARG = genCARG3(data.profit, "OPERATE_COST", date);
@@ -122,18 +121,24 @@ function buildKeyfigure(records) {
           _gb("LONG_LOAN") +
           _gb("NONCURRENT_LIAB_1YEAR") +
           _gb("BOND_PAYABLE") +
-          _gb("LONG_PAYABLE");
+          _gb("LONG_PAYABLE") +
+          _gb("TOTAL_OTHER_PAYABLE");
 
-        const INTEREST_DEBT_AVG =
-          _g_avg(data.balance, [date, getFirstQuarter(date)], "SHORT_LOAN") +
-          _g_avg(data.balance, [date, getFirstQuarter(date)], "LONG_LOAN") +
-          _g_avg(data.balance, [date, getFirstQuarter(date)], "NONCURRENT_LIAB_1YEAR") +
-          _g_avg(data.balance, [date, getFirstQuarter(date)], "BOND_PAYABLE") +
-          _g_avg(data.balance, [date, getFirstQuarter(date)], "LONG_PAYABLE");
+        // const INTEREST_DEBT_AVG =
+        //   _g_avg(data.balance, [date, getFirstQuarter(date)], "SHORT_LOAN") +
+        //   _g_avg(data.balance, [date, getFirstQuarter(date)], "LONG_LOAN") +
+        //   _g_avg(data.balance, [date, getFirstQuarter(date)], "NONCURRENT_LIAB_1YEAR") +
+        //   _g_avg(data.balance, [date, getFirstQuarter(date)], "BOND_PAYABLE") +
+        //   _g_avg(data.balance, [date, getFirstQuarter(date)], "LONG_PAYABLE");
 
         // (期末.负债合计 - (期末.应付票据及应付账款 + 期末.预收账款 + 期末.合同负债 + 期末.应付职工薪酬 + 期末.应交税费 + 期末.其他应付款 + 期末.其他流动负债) - (期末.非流动负债合计 - 期末.长期借款 - 期末.应付债券 - 期末.租赁负债)) / 期末.资产总计
         const INTEREST_DEBT_RATIO = INTEREST_DEBT / _gb("TOTAL_ASSETS");
-        const HEAVY_ASSETS = _gb("FIXED_ASSET") + _gb("CIP") + _gb("PRODUCTIVE_BIOLOGY_ASSET") + _gb("USERIGHT_ASSET");
+        const PRODUCTIVE_ASSETS =
+          _gb("FIXED_ASSET") +
+          _gb("CIP") +
+          _gb("PRODUCTIVE_BIOLOGY_ASSET") +
+          _gb("USERIGHT_ASSET") +
+          _gb("INTANGIBLE_ASSET");
 
         keyfigure[date] = removeNaN({
           // SECURITY_NAME_ABBR: _getA(data.profit, "SECURITY_NAME_ABBR", ""),
@@ -153,8 +158,8 @@ function buildKeyfigure(records) {
           NETPROFIT: _gp("NETPROFIT"),
           // NETPROFIT_Q: _getQ(data.profit, "NETPROFIT"),
           NETPROFIT_CARG: genCARG3(data.profit, "NETPROFIT", date),
-          ROE: _gp("NETPROFIT") / _g_avg(data.balance, [date, getFirstQuarter(date)], "TOTAL_EQUITY"),
-          ROA: _gp("NETPROFIT") / _g_avg(data.balance, [date, getFirstQuarter(date)], "TOTAL_ASSETS"),
+          ROE: _gp("NETPROFIT") / _g_avg(_gb, "TOTAL_EQUITY", [date, getFirstQuarter(date)]),
+          ROA: _gp("NETPROFIT") / _g_avg(_gb, "TOTAL_ASSETS", [date, getFirstQuarter(date)]),
           GPM: GROSS_PROFIT / _gp("OPERATE_INCOME"),
           CPM: CORE_PROFIT / _gp("OPERATE_INCOME"), // 核心利润率
           CPM_GPM: CORE_PROFIT / GROSS_PROFIT, // 核心利润率与毛利率的比值
@@ -168,14 +173,14 @@ function buildKeyfigure(records) {
               _gb("CONTRACT_ASSET") -
               _gb("PREPAYMENT")) /
             _gb("TOTAL_ASSETS"),
-          SALES_SERVICES: _gc("NETCASH_OPERATE"), // 销售服务现金流
+          NETCASH_OPERATE: _gc("NETCASH_OPERATE"), // 销售服务现金流
           // 收现比
           CASH_INCOME: _gc("SALES_SERVICES") / _gp("OPERATE_INCOME"), // 现金收入占比
           // 净现比
           // CASH_COREPROFIT: _getA(data.cash, 'NETCASH_OPERATE') / CORE_PROFIT, // 现金净利润占比
           RECEIVABLE_TURNOVER: checkNumber(_gp("OPERATE_INCOME") / _gb("NOTE_ACCOUNTS_RECE")),
           ASSET_TURNOVER: _gp("OPERATE_INCOME") / _gb("TOTAL_ASSETS"),
-          INVENTORY_TURNOVER: checkNumber(_gp("OPERATE_COST") / _gb("INVENTORY"), 0),
+          INVENTORY_TURNOVER: checkNumber(_gp("OPERATE_COST") / _gb("INVENTORY")),
           // 存货占比
           INVENTORY_ASSETS: _gb("INVENTORY") / _gb("TOTAL_ASSETS"),
           // 存货三年增速
@@ -204,7 +209,9 @@ function buildKeyfigure(records) {
           //     _get(data.balance, 'CONTRACT_LIAB')) /
           //   _get(data.profit, 'OPERATE_INCOME'),
           // 总资产现金回收率
-          CASH_RECOVERY: _gc("NETCASH_OPERATE") / _gb("TOTAL_ASSETS"),
+          // CROA: _gc("NETCASH_OPERATE") / _gb("TOTAL_ASSETS"),
+          // 净资产现金回收率
+          CROE: _g_ttm(_gc, "NETCASH_OPERATE") / _g_avg(_gb, "TOTAL_EQUITY", getTTMQuarter(date)),
           // PERIOD_COST:
           //   (_get(data.profit, 'FINANCE_EXPENSE', 0) +
           //     _get(data.profit, 'RESEARCH_EXPENSE', 0) +
@@ -224,13 +231,19 @@ function buildKeyfigure(records) {
             _gb("TRADE_FINASSET_NOTFVTPL") +
             _gb("NONCURRENT_ASSET_1YEAR") -
             (_gb("SHORT_LOAN") + _gb("BORROW_FUND") + _gb("TRADE_FINLIAB_NOTFVTPL") + _gb("NONCURRENT_LIAB_1YEAR")),
-          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / Math.abs(CORE_PROFIT),
-          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / Math.abs(CORE_PROFIT),
-          NETPROFIT_HEAVY_ASSETS: _gp("NETPROFIT") / HEAVY_ASSETS,
-          HEAVY_ASSETS,
+          DEPRECIATION: (_gp("ASSET_IMPAIRMENT_INCOME") + _gp("ASSET_IMPAIRMENT_LOSS")) / _gp("OPERATE_INCOME"),
+          BAD_DEBT: (_gp("CREDIT_IMPAIRMENT_LOSS") + _gp("CREDIT_IMPAIRMENT_INCOME")) / _gp("OPERATE_INCOME"),
+          ROPA: CORE_PROFIT / (PRODUCTIVE_ASSETS - _gb("CIP")),
+          PRODUCTIVE_ASSETS: PRODUCTIVE_ASSETS,
+          PRODUCTIVE_ASSETS_RATIO: PRODUCTIVE_ASSETS / _gb("TOTAL_ASSETS"),
+          INVEST_RATIO: (_gc("CONSTRUCT_LONG_ASSET") - _gc("DISPOSAL_LONG_ASSET")) / Math.abs(_gp("NETPROFIT")),
           // FINANCING_RATE: INTEREST_DEBT_AVG === 0 ? 0 : _gp("FE_INTEREST_EXPENSE") / INTEREST_DEBT_AVG,
           LPE: _gb("LONG_PREPAID_EXPENSE") / _gb("TOTAL_EQUITY"),
           GOODWILL: _gb("GOODWILL") / _gb("TOTAL_EQUITY"),
+          SALE_EXPENSE: _gp("SALE_EXPENSE") / _gp("OPERATE_INCOME"),
+          MANAGE_EXPENSE: _gp("MANAGE_EXPENSE") / _gp("OPERATE_INCOME"),
+          RESEARCH_EXPENSE: _gp("RESEARCH_EXPENSE") / _gp("OPERATE_INCOME"),
+          FINANCE_EXPENSE: _gp("FINANCE_EXPENSE") / _gp("OPERATE_INCOME"),
         });
         return keyfigure;
       },
