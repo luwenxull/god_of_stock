@@ -90,6 +90,14 @@ export default function Keyfigure(props) {
   const [loading, setLoading] = useState(false);
   const [marked, setMarked] = useState({});
 
+  useEffect(() => {
+    fetch("/api/ent/marked")
+      .then((res) => res.json())
+      .then((data) => {
+        setMarked(data);
+      });
+  }, []);
+
   const rawColumns = [
     {
       title: "公司",
@@ -498,26 +506,26 @@ export default function Keyfigure(props) {
         //   __score: 0,
         // },
         {
-          title: '研发费用率',
-          dataIndex: 'RESEARCH_EXPENSE',
+          title: "研发费用率",
+          dataIndex: "RESEARCH_EXPENSE",
           __percent: true,
           __score: 0,
         },
         {
-          title: '销售费用率',
-          dataIndex: 'SALE_EXPENSE',
+          title: "销售费用率",
+          dataIndex: "SALE_EXPENSE",
           __percent: true,
           __score: 0,
         },
         {
-          title: '管理费用率',
-          dataIndex: 'MANAGE_EXPENSE',
+          title: "管理费用率",
+          dataIndex: "MANAGE_EXPENSE",
           __percent: true,
           __score: 0,
         },
         {
-          title: '财务费用率',
-          dataIndex: 'FINANCE_EXPENSE',
+          title: "财务费用率",
+          dataIndex: "FINANCE_EXPENSE",
           __percent: true,
           __score: 0,
         },
@@ -592,14 +600,6 @@ export default function Keyfigure(props) {
 
     return stats;
   }, [source]);
-
-  useEffect(() => {
-    fetch("/api/ent/marked")
-      .then((res) => res.json())
-      .then((data) => {
-        setMarked(data);
-      });
-  }, []);
 
   const columns = useMemo(() => {
     function handleColumn(column) {
@@ -680,7 +680,10 @@ export default function Keyfigure(props) {
       return;
     }
     setLoading(true);
-    fetch(`/api/ent/report?code=${props.ents.map((ent) => ent.SECCODE).toString()}`)
+    fetch(`/api/ent/report/query`, {
+      method: "POST",
+      body: JSON.stringify(props.ents.map((ent) => ent.SECCODE)),
+    })
       .then((res) => res.json())
       .then((data) => {
         setSource(data.map((data, i) => Object.assign(addYOY(data), props.ents[i])));
