@@ -1,20 +1,23 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
 import Chart from "chart.js/auto";
+import { Switch } from "@nextui-org/react";
 import { formatNumber, percent, REPORT_DATE_REG } from "../util";
 
 Chart.defaults.font.family = "serif";
 
+const ENABLE_Q_MODE = ["OPERATE_INCOME", "CORE_PROFIT"];
+
 export default function ({ data, field, title, percent: __percent }) {
   const container = useRef();
   const chart = useRef();
-  const [reportType, setReportType] = useState("acc");
+  const [qMode, setQMode] = useState(false);
   function setChartData() {
     const labels = Object.keys(data)
       .filter((key) => REPORT_DATE_REG.test(key))
       .sort((a, b) => new Date(...a.split("-")) - new Date(...b.split("-")))
       .slice(0, -1);
-    const _field = reportType === "acc" ? field : `${field}_Q`;
+    const _field = qMode ? `${field}_Q` : field;
     chart.current.data = {
       labels,
       datasets: [
@@ -92,21 +95,15 @@ export default function ({ data, field, title, percent: __percent }) {
     });
   }, []);
 
-  useEffect(setChartData, [reportType]);
+  useEffect(setChartData, [qMode]);
 
   return (
     <>
-      {/* <Segmented
-        options={[
-          { label: '累积季报', value: 'acc' },
-          {
-            label: '季报',
-            value: 'quarter',
-          },
-        ]}
-        value={reportType}
-        onChange={setReportType}
-      ></Segmented> */}
+      {ENABLE_Q_MODE.includes(field) && (
+        <Switch isSelected={qMode} onValueChange={setQMode}>
+          单季报
+        </Switch>
+      )}
       <canvas
         ref={container}
         style={{
